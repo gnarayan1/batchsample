@@ -2,6 +2,9 @@ package hello;
 
 import javax.sql.DataSource;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.batch.core.ChunkListener;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
@@ -22,6 +25,8 @@ import org.springframework.core.io.ClassPathResource;
 @Configuration
 @EnableBatchProcessing
 public class BatchConfiguration {
+	
+	private static final Logger log = LoggerFactory.getLogger(BatchConfiguration.class);
 
 	@Autowired
 	public JobBuilderFactory jobBuilderFactory;
@@ -71,15 +76,15 @@ public class BatchConfiguration {
 
 	// tag::jobstep[]
 	@Bean
-	public Job importUserJob(JobCompletionNotificationListener listener) {
+	public Job importUserJob(JobCompletionNotificationListener listener, ChunkListener myChunkListener) {
 		return jobBuilderFactory.get("importUserJob").incrementer(new RunIdIncrementer()).listener(listener)
-				.flow(step1()).end().build();
+				.flow(step1(myChunkListener)).end().build();
 	}
 
 	@Bean
-	public Step step1() {
-		return stepBuilderFactory.get("step1").<Person, Person>chunk(10).reader(reader()).processor(processor())
-				.writer(writer()).build();
+	public Step step1(ChunkListener myChunkListener) {
+		return stepBuilderFactory.get("step1").<Person, Person>chunk(1).reader(reader()).processor(processor())
+				.writer(writer()).listener(myChunkListener).build();
 	}
 	// end::jobstep[]
 }
